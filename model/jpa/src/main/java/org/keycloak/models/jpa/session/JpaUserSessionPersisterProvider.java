@@ -243,6 +243,8 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
     public List<UserSessionModel> loadUserSessions(int firstResult, int maxResults, boolean offline, int lastCreatedOn, String lastUserSessionId) {
         String offlineStr = offlineToString(offline);
 
+        long startTime = System.currentTimeMillis();
+
         TypedQuery<PersistentUserSessionEntity> query = em.createNamedQuery("findUserSessions", PersistentUserSessionEntity.class);
         query.setParameter("offline", offlineStr);
         query.setParameter("lastCreatedOn", lastCreatedOn);
@@ -259,8 +261,16 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
                 .map(this::toAdapter)
                 .collect(Collectors.toList());
 
+        long duration = System.currentTimeMillis()-startTime;
+        startTime = System.currentTimeMillis();
+        logger.infof("User sessions (%d) loaded in %d ms", maxResults, duration);
+
         Map<String, PersistentUserSessionAdapter> sessionsById = result.stream()
                 .collect(Collectors.toMap(UserSessionModel::getId, Function.identity()));
+
+        duration = System.currentTimeMillis()-startTime;
+        startTime = System.currentTimeMillis();
+        logger.infof("User sessions map created in %d ms", duration);
 
         Set<String> userSessionIds = sessionsById.keySet();
 
@@ -271,6 +281,10 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
             query2.setParameter("userSessionIds", userSessionIds);
             query2.setParameter("offline", offlineStr);
             List<PersistentClientSessionEntity> clientSessions = query2.getResultList();
+
+            duration = System.currentTimeMillis()-startTime;
+            startTime = System.currentTimeMillis();
+            logger.infof("Client sessions loaded in %d ms", duration);
 
             for (PersistentClientSessionEntity clientSession : clientSessions) {
                 PersistentUserSessionAdapter userSession = sessionsById.get(clientSession.getUserSessionId());
@@ -285,6 +299,9 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
                     currentClientSessions.put(clientSession.getClientId(), clientSessAdapter);
                 }
             }
+            duration = System.currentTimeMillis()-startTime;
+            startTime = System.currentTimeMillis();
+            logger.infof("Client sessions mapped to user sessions in %d ms", duration);
         }
 
         for (String clientUUID : removedClientUUIDs) {
