@@ -310,7 +310,7 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
             onClientRemoved(clientUUID);
         }
 
-        return (List) result;
+        return (List) userSessionAdapters;
     }
 
     private PersistentUserSessionAdapter toAdapter(PersistentUserSessionEntity entity) {
