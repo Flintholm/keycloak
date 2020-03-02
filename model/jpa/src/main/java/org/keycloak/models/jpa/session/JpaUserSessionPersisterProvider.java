@@ -241,6 +241,8 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
     public List<UserSessionModel> loadUserSessions(int firstResult, int maxResults, boolean offline) {
         String offlineStr = offlineToString(offline);
 
+        logger.infof("Loading user sessions offset = %d, max = %d", firstResult, maxResults);
+
         long startTime = System.currentTimeMillis();
 
         TypedQuery<PersistentUserSessionEntity> queryUserSessions = em.createNamedQuery("findUserSessionsOrderedById", PersistentUserSessionEntity.class);
