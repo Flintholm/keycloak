@@ -240,32 +240,31 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
     }
 
     @Override
-    public List<UserSessionModel> loadUserSessions(int firstResult, int maxResults, boolean offline, int lastCreatedOn, String lastUserSessionId) {
+    public List<UserSessionModel> loadUserSessions(int firstResult, int maxResults, boolean offline, int lastCreatedOn, String previousUserSessionId) {
         String offlineStr = offlineToString(offline);
 
         long startTime = System.currentTimeMillis();
 
-        TypedQuery<PersistentUserSessionEntity> query = em.createNamedQuery("findUserSessions", PersistentUserSessionEntity.class);
-        query.setParameter("offline", offlineStr);
-        query.setParameter("lastCreatedOn", lastCreatedOn);
-        query.setParameter("lastSessionId", lastUserSessionId);
+        TypedQuery<PersistentUserSessionEntity> queryUserSessions = em.createNamedQuery("findUserSessionsOrderedById", PersistentUserSessionEntity.class);
+        queryUserSessions.setParameter("offline", offlineStr);
+        queryUserSessions.setParameter("previousSessionId", previousUserSessionId);
 
         if (firstResult != -1) {
-            query.setFirstResult(firstResult);
+            queryUserSessions.setFirstResult(firstResult);
         }
         if (maxResults != -1) {
-            query.setMaxResults(maxResults);
+            queryUserSessions.setMaxResults(maxResults);
         }
 
-        List<PersistentUserSessionAdapter> result = query.getResultStream()
+        List<PersistentUserSessionAdapter> userSessionAdapters = queryUserSessions.getResultStream()
                 .map(this::toAdapter)
                 .collect(Collectors.toList());
 
         long duration = System.currentTimeMillis()-startTime;
         startTime = System.currentTimeMillis();
-        logger.infof("User sessions (%d) loaded in %d ms", maxResults, duration);
+        logger.infof("User sessions (%d) loaded in %d ms (new impl)", maxResults, duration);
 
-        Map<String, PersistentUserSessionAdapter> sessionsById = result.stream()
+        Map<String, PersistentUserSessionAdapter> sessionsById = userSessionAdapters.stream()
                 .collect(Collectors.toMap(UserSessionModel::getId, Function.identity()));
 
         duration = System.currentTimeMillis()-startTime;
@@ -277,10 +276,13 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
         Set<String> removedClientUUIDs = new HashSet<>();
 
         if (!userSessionIds.isEmpty()) {
-            TypedQuery<PersistentClientSessionEntity> query2 = em.createNamedQuery("findClientSessionsByUserSessions", PersistentClientSessionEntity.class);
-            query2.setParameter("userSessionIds", userSessionIds);
-            query2.setParameter("offline", offlineStr);
-            List<PersistentClientSessionEntity> clientSessions = query2.getResultList();
+            String lastUserSessionId = userSessionAdapters.get(userSessionAdapters.size() - 1).getId();
+
+            TypedQuery<PersistentClientSessionEntity> queryClientSessions = em.createNamedQuery("findClientSessionsOrderedById", PersistentClientSessionEntity.class);
+            queryClientSessions.setParameter("offline", offlineStr);
+            queryClientSessions.setParameter("previousSessionId", previousUserSessionId);
+            queryClientSessions.setParameter("lastSessionId", lastUserSessionId);
+            List<PersistentClientSessionEntity> clientSessions = queryClientSessions.getResultList();
 
             duration = System.currentTimeMillis()-startTime;
             startTime = System.currentTimeMillis();
