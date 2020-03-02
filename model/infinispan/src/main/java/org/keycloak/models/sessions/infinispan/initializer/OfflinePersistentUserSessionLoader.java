@@ -99,7 +99,7 @@ public class OfflinePersistentUserSessionLoader implements SessionLoader<Offline
         log.tracef("Loading sessions for segment=%d createdOn=%d lastSessionId=%s", ctx.getSegment(), ctx.getLastCreatedOn(), ctx.getLastSessionId());
 
         UserSessionPersisterProvider persister = session.getProvider(UserSessionPersisterProvider.class);
-        List<UserSessionModel> sessions = persister.loadUserSessions(first, sessionsPerSegment, true, ctx.getLastCreatedOn(), ctx.getLastSessionId());
+        List<UserSessionModel> sessions = persister.loadUserSessions(first, sessionsPerSegment, true);
 
         log.tracef("Sessions loaded from DB - segment=%d createdOn=%d lastSessionId=%s", ctx.getSegment(), ctx.getLastCreatedOn(), ctx.getLastSessionId());
 

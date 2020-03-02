@@ -111,7 +111,7 @@ public class DisabledUserSessionPersisterProvider implements UserSessionPersiste
     }
 
     @Override
-    public List<UserSessionModel> loadUserSessions(int firstResult, int maxResults, boolean offline, int lastCreatedOn, String lastUserSessionId) {
+    public List<UserSessionModel> loadUserSessions(int firstResult, int maxResults, boolean offline) {
         return Collections.emptyList();
     }
 

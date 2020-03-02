@@ -42,7 +42,6 @@ import java.io.Serializable;
                 " AND (sess.createdOn > :lastCreatedOn OR (sess.createdOn = :lastCreatedOn AND sess.userSessionId > :lastSessionId))" +
                 " order by sess.createdOn,sess.userSessionId"),
         @NamedQuery(name="findUserSessionsOrderedById", query="select sess from PersistentUserSessionEntity sess where sess.offline = :offline" +
-                " AND sess.userSessionId > :previousSessionId" +
                 " order by sess.userSessionId")
 })
 @Table(name="OFFLINE_USER_SESSION")

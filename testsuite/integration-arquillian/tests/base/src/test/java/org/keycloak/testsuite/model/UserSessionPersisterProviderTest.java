@@ -38,9 +38,7 @@ import org.keycloak.testsuite.runonserver.RunOnServerDeployment;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -415,7 +413,7 @@ public class UserSessionPersisterProviderTest extends AbstractTestRealmKeycloakT
     public void testNoSessions(KeycloakSession session) {
         KeycloakModelUtils.runJobInTransaction(session.getKeycloakSessionFactory(), (KeycloakSession sessionNS) -> {
             UserSessionPersisterProvider persister = sessionNS.getProvider(UserSessionPersisterProvider.class);
-            List<UserSessionModel> sessions = persister.loadUserSessions(0, 1, true, 0, "abc");
+            List<UserSessionModel> sessions = persister.loadUserSessions(0, 1, true);
             Assert.assertEquals(0, sessions.size());
         });
     }
@@ -578,11 +576,9 @@ public class UserSessionPersisterProviderTest extends AbstractTestRealmKeycloakT
         int pageCount = 0;
         boolean next = true;
         List<UserSessionModel> result = new ArrayList<>();
-        int lastCreatedOn = 0;
-        String lastSessionId = "abc";
 
         while (next) {
-            List<UserSessionModel> sess = persister.loadUserSessions(0, sessionsPerPage, offline, lastCreatedOn, lastSessionId);
+            List<UserSessionModel> sess = persister.loadUserSessions(0, sessionsPerPage, offline);
 
             if (sess.size() < sessionsPerPage) {
                 next = false;
@@ -593,10 +589,6 @@ public class UserSessionPersisterProviderTest extends AbstractTestRealmKeycloakT
                 }
             } else {
                 pageCount++;
-
-                UserSessionModel lastSession = sess.get(sess.size() - 1);
-                lastCreatedOn = lastSession.getStarted();
-                lastSessionId = lastSession.getId();
             }
 
             result.addAll(sess);

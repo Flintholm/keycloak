@@ -37,9 +37,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -240,14 +238,13 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
     }
 
     @Override
-    public List<UserSessionModel> loadUserSessions(int firstResult, int maxResults, boolean offline, int lastCreatedOn, String previousUserSessionId) {
+    public List<UserSessionModel> loadUserSessions(int firstResult, int maxResults, boolean offline) {
         String offlineStr = offlineToString(offline);
 
         long startTime = System.currentTimeMillis();
 
         TypedQuery<PersistentUserSessionEntity> queryUserSessions = em.createNamedQuery("findUserSessionsOrderedById", PersistentUserSessionEntity.class);
         queryUserSessions.setParameter("offline", offlineStr);
-        queryUserSessions.setParameter("previousSessionId", previousUserSessionId);
 
         if (firstResult != -1) {
             queryUserSessions.setFirstResult(firstResult);
@@ -276,11 +273,12 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
         Set<String> removedClientUUIDs = new HashSet<>();
 
         if (!userSessionIds.isEmpty()) {
+            String firstUserSessionId = userSessionAdapters.get(0).getId();
             String lastUserSessionId = userSessionAdapters.get(userSessionAdapters.size() - 1).getId();
 
             TypedQuery<PersistentClientSessionEntity> queryClientSessions = em.createNamedQuery("findClientSessionsOrderedById", PersistentClientSessionEntity.class);
             queryClientSessions.setParameter("offline", offlineStr);
-            queryClientSessions.setParameter("previousSessionId", previousUserSessionId);
+            queryClientSessions.setParameter("firstSessionId", firstUserSessionId);
             queryClientSessions.setParameter("lastSessionId", lastUserSessionId);
             List<PersistentClientSessionEntity> clientSessions = queryClientSessions.getResultList();
 

@@ -43,18 +43,13 @@ public class LoadPersistentSessionsCommand extends AbstractCommand {
     protected void doRunCommand(KeycloakSession session) {
         final int workersCount = getIntArg(0);
         final int limit = getIntArg(1);
-        //int workersCount = 8;
-        //int limit = 64;
-
-        AtomicInteger lastCreatedOn = new AtomicInteger(0);
-        AtomicReference<String> lastSessionId = new AtomicReference<>("abc");
 
         AtomicBoolean finished = new AtomicBoolean(false);
         int i=0;
 
         while (!finished.get()) {
             if (i % 16 == 0) {
-                log.infof("Starting iteration: %s . lastCreatedOn: %d, lastSessionId: %s", i, lastCreatedOn.get(), lastSessionId.get());
+                log.infof("Starting iteration: %s", i);
             }
 
             i = i + workersCount;
@@ -62,7 +57,7 @@ public class LoadPersistentSessionsCommand extends AbstractCommand {
             MyWorker lastWorker = null;
 
             for (int workerId = 0 ; workerId < workersCount ; workerId++) {
-                lastWorker = new MyWorker(workerId, lastCreatedOn.get(), lastSessionId.get(), limit, sessionFactory);
+                lastWorker = new MyWorker(workerId, limit, sessionFactory);
                 Thread worker = new Thread(lastWorker);
                 workers.add(worker);
             }
@@ -84,11 +79,7 @@ public class LoadPersistentSessionsCommand extends AbstractCommand {
                 finished.set(true);
             } else {
                 UserSessionModel lastSession = lastWorkerSessions.get(lastWorkerSessions.size() - 1);
-                lastCreatedOn.set(lastSession.getStarted());
-                lastSessionId.set(lastSession.getId());
             }
-
-
         }
 
         log.info("All persistent sessions loaded successfully");
@@ -103,17 +94,13 @@ public class LoadPersistentSessionsCommand extends AbstractCommand {
     private class MyWorker implements Runnable {
 
         private final int workerId;
-        private final int lastCreatedOn;
-        private final String lastSessionId;
         private final int limit;
         private final KeycloakSessionFactory sessionFactory;
 
         private List<UserSessionModel> loadedSessions = new LinkedList<>();
 
-        public MyWorker(int workerId, int lastCreatedOn, String lastSessionId, int limit, KeycloakSessionFactory sessionFactory) {
+        public MyWorker(int workerId, int limit, KeycloakSessionFactory sessionFactory) {
             this.workerId = workerId;
-            this.lastCreatedOn = lastCreatedOn;
-            this.lastSessionId = lastSessionId;
             this.limit = limit;
             this.sessionFactory = sessionFactory;
         }
@@ -124,7 +111,7 @@ public class LoadPersistentSessionsCommand extends AbstractCommand {
                 int offset = workerId * limit;
 
                 UserSessionPersisterProvider persister = keycloakSession.getProvider(UserSessionPersisterProvider.class);
-                loadedSessions = persister.loadUserSessions(offset, limit, true, lastCreatedOn, lastSessionId);
+                loadedSessions = persister.loadUserSessions(offset, limit, true);
 
             });
         }
